@@ -86,11 +86,9 @@ The easiest way to get started - no tools to install.
    - Add the device to Home Assistant
    ![Browser install step 2 - device discovered](img/browser-install-2.png)
 
-#### Updating via Browser
+OTA Updates are available within Home Assistant:
 
-1. Connect the board to your computer via USB
-2. Open https://jjohnsen.github.io/esphome-altherma/ and click **Connect**
-3. Select **Update**
+![OTA Updates](img/ota-updates.png)
 
 ### Option 2: Command Line (ESPHome CLI)
 
