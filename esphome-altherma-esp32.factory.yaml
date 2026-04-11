@@ -34,4 +34,4 @@ update:
   - platform: http_request
     name: None
     id: update_http_request
-    source: https://jjohnsen.github.io/esphome-altherma/firmware/esphome-altherma.manifest.json
+    source: https://esphome-altherma.jjohnsen.no/firmware/esphome-altherma.manifest.json
