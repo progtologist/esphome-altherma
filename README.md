@@ -6,14 +6,14 @@
 
 A native [ESPHome](https://esphome.io/) custom component for monitoring Daikin Altherma 3 heat pumps via the X10A connector. It exposes temperatures, voltages, currents, and other operational data directly to [Home Assistant](https://www.home-assistant.io/) - no MQTT, no manual config, just plug and play.
 
-🌐 [Web Installer](https://jjohnsen.github.io/esphome-altherma/) · 💬 [HA Community](https://community.home-assistant.io/t/esphome-altherma-monitor-your-daikin-altherma-3-heat-pump-via-x10a/1000476) · 🗨️ [Discussions](https://github.com/jjohnsen/esphome-altherma/discussions)
+🌐 [Web Installer](https://esphome-altherma.jjohnsen.no) · 💬 [HA Community](https://community.home-assistant.io/t/esphome-altherma-monitor-your-daikin-altherma-3-heat-pump-via-x10a/1000476) · 🗨️ [Discussions](https://github.com/jjohnsen/esphome-altherma/discussions)
 
 ![Home Assistant dashboard showing Altherma sensor data](img/esphome0.png)
 ![ESPHome device page with Altherma entities](img/esphome1.png)
 
 ## Quick Start
 
-1. Open the [Web Installer](https://jjohnsen.github.io/esphome-altherma/) in Chrome/Edge
+1. Open the [Web Installer](https://esphome-altherma.jjohnsen.no) in Chrome/Edge
 2. Connect your ESP32 via USB and click **Connect**
 3. Flash the firmware and configure Wi-Fi
 4. The device appears automatically in Home Assistant 🎉
