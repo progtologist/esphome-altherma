@@ -4,6 +4,7 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
+#include "esphome/components/api/custom_api_device.h"
 #include "esphome/components/uart/uart.h"
 #include <vector>
 
@@ -99,20 +100,31 @@ namespace esphome
       }
     };
 
-    class AlthermaHub : public PollingComponent, public uart::UARTDevice
+    class AlthermaHub : public PollingComponent, public uart::UARTDevice, public api::CustomAPIDevice
     {
     public:
       ~AlthermaHub();
       
       void register_sensor(AlthermaSensorBase *sensor);
+      void set_query_result_text_sensor(text_sensor::TextSensor *text_sensor) {
+        this->query_result_text_sensor_ = text_sensor;
+      }
 
       void setup() override;
       void update() override;
       void loop() override;
+      void queue_manual_query(std::string registry_id, int32_t offset, int32_t convid, int32_t datasize);
 
     protected:
+      enum class ManualQueryStatusLevel : uint8_t {
+        INFO,
+        WARN,
+        ERROR,
+      };
+
       unsigned char calculate_crc(unsigned char *src, size_t len);
       bool decode_label(AlthermaSensorBase *sensor, unsigned char *frame, size_t frame_len, LabelDef &out);
+      void publish_manual_query_statusf_(esp_log_level_t level, const char *fmt, ...);
       void begin_poll_cycle_();
       void start_query_(uint8_t reg);
       void read_response_();
@@ -141,6 +153,16 @@ namespace esphome
       uint32_t query_started_at_{0};
       uint32_t cycle_started_at_{0};
       unsigned char rx_buffer_[RX_BUFFER_SIZE] = {0};
+
+      bool manual_query_pending_{false};
+      bool manual_query_active_{false};
+
+      uint8_t manual_register_{0};
+      int32_t manual_offset_{0};
+      int32_t manual_convid_{0};
+      int32_t manual_datasize_{0};
+
+      text_sensor::TextSensor *query_result_text_sensor_{nullptr};
     };
 
   } // namespace altherma_hub

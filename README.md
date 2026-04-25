@@ -4,7 +4,7 @@
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-integration-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
 [![GitHub stars](https://img.shields.io/github/stars/jjohnsen/esphome-altherma)](https://github.com/jjohnsen/esphome-altherma/stargazers)
 
-A native [ESPHome](https://esphome.io/) custom component for monitoring Daikin Altherma 3 heat pumps via the X10A connector. It exposes temperatures, voltages, currents, and other operational data directly to [Home Assistant](https://www.home-assistant.io/) - no MQTT, no manual config, just plug and play.
+A native [ESPHome](https://esphome.io/) custom component for monitoring Daikin Altherma 3 heat pumps via the X10A connector. It exposes temperatures, voltages, currents, and other operational data directly to [Home Assistant](https://www.home-assistant.io/). No MQTT, no manual config, just plug and play.
 
 🌐 [Web Installer](https://esphome-altherma.jjohnsen.no) · 💬 [HA Community](https://community.home-assistant.io/t/esphome-altherma-monitor-your-daikin-altherma-3-heat-pump-via-x10a/1000476) · 🗨️ [Discussions](https://github.com/jjohnsen/esphome-altherma/discussions) · 📖 [Emoncms Setup Guide](https://jjohnsen.no/2026/esphome-altherma-emoncms-setup-guide/)
 
@@ -72,6 +72,7 @@ Refer to the [ESPAltherma wiring guide](https://github.com/raomin/ESPAltherma?ta
 | Board                  | Heat Pump                                | User      | Additional info
 | --                     | --                                       | --        | --
 | Generic esp32dev board | ERGA08DAV3 / EHVH08S23DA6V               | @jjohnsen | This repo ;)
+| M5-Stack Basic         | ERGA08DAV3 / EHVH08S23DA6V               | @jjohnsen | This repo ;)
 | M5Stack AtomS3 Lite    | DAIKIN Altherma 3 R Ech2o / EHSXB08P30EF | @maromme  | https://github.com/jjohnsen/esphome-altherma/discussions/4
 | DOIT ESP32 DEVKIT V1   | EHVX08S26CB9W                            | @MaBeniu  | https://github.com/jjohnsen/esphome-altherma/discussions/5
 | esp32dev | ERLQ011CAV3 / EHBX11CB9W || [Detailed setup guide in French](https://domo.rem81.com/index.php/2026/01/12/ha-monitoring-de-ma-pac-daikin-altherma-avec-esphome-esphome-altherma-alternative-a-espaltherma/)
@@ -142,6 +143,47 @@ Each includes `base.yaml` (shared component setup) and the model config from `co
 
 - **[ESPHome Altherma + Emoncms Setup Guide](https://jjohnsen.no/2026/esphome-altherma-emoncms-setup-guide/)**  
    Long-term heat pump performance monitoring with the MyHeatpump dashboard in Home Assistant. Covers Emoncms installation, input/feed setup, and COP tracking.
+
+## Register Discovery (Experimental)
+
+> ⚠️ **This is an experimental feature, use at your own risk.**
+
+The component exposes a `query_register` Home Assistant action (service) that lets you query any register directly. This is useful for exploring what data your specific heat pump model supports, which you can then turn into proper sensor definitions.
+
+![Home Assistant Developer tools calling action query_register with register, offset, convid, and datasize fields](img/home-assistant-query-register-action-form.png)
+
+### Action Parameters
+
+| Parameter | Type | Description |
+| -- | -- | -- |
+| `register` | string | Register address as a hex (`0x60`) string |
+| `offset` | int | Byte offset within the register payload (0-based) |
+| `convid` | int | Converter ID from `converters.h`, determines how bytes are decoded |
+| `datasize` | int | Number of bytes to read for decoding |
+
+The result is published to the **Manual Query Registry Result** text sensor and also appears in the ESPHome device logs.
+
+![Home Assistant Manual Query Registry Result entity showing accepted, failed, and successful query states with full response buffer](img/home-assistant-manual-query-registry-result-state-history.png)
+
+### Example: Home Assistant action call
+
+```yaml
+action: esphome.esphome_altherma_query_register
+data:
+   register: "0x60"
+   offset: 11
+   convid: 105
+   datasize: 1
+```
+
+### Interpreting the result
+
+The **Manual Query Registry Result** sensor updates after every call and shows one of:
+
+- `Manual query accepted reg=0x.. offset=.. convid=.. datasize=..`: query queued
+- `Manual query result reg=0x.. value=.. buffer=..`: success, with decoded value and full raw frame as hex
+- `Manual query failed reg=0x..: <reason>`: failure with cause (timeout, CRC invalid, out-of-bounds, etc.)
+- `Manual query rejected: <reason>`: invalid parameters, not sent to device
 
 ## Development
 

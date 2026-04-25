@@ -14,6 +14,7 @@ logger:
 
 # API is a requirement of the dashboard import.
 api:
+  custom_services: true
 
 # OTA is required for Over-the-Air updating
 ota:
@@ -49,6 +50,13 @@ altherma_hub:
   id: altherma_hub_1
   uart_id: uart_bus
   update_interval: 30s
+  query_result_text_sensor: query_registry_result
+
+text_sensor:
+  - platform: template
+    name: "Manual Query Registry Result"
+    id: query_registry_result
+    entity_category: diagnostic
 
 # select:
 #   - platform: template
