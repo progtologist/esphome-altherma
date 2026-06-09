@@ -203,7 +203,7 @@ sensor:
     offset: 9
     convid: 105
     datasize: 2
-    unit_of_measurement: l⁄min
+    unit_of_measurement: l/min
     state_class: measurement
     accuracy_decimals: 1
   - <<: *altherma_base
