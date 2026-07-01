@@ -1,0 +1,1099 @@
+# Mapping for Daikin GEO3 (3rd generation geothermal/brine) D series 6-10kW heat pumps.
+#
+# Compatible models (Daikin GEO3 platform, 6kW and 10kW):
+#   - EGSAX06DA9W, EGSAX10DA9W
+#   - EGSAH06DA9W, EGSAH10DA9W
+#   - EWSAX06DA9W, EWSAX10DA9W
+#   - EWSAH06DA9W, EWSAH10DA9W
+#   - All D series GEO3 models with EGSA*/EWSA* prefix, 6kW and 10kW
+#
+# Based on the upstream ESPAltherma model definition:
+# https://github.com/raomin/ESPAltherma/blob/main/include/def/Altherma(EGSAH-X-EWSAH-X-D%20series%206-10kW%20GEO3).h
+#
+# Geothermal heat pumps use brine (water/glycol) loops instead of air heat exchangers.
+# Key differences from air-to-water (ERGA/ERLA) models:
+#   - Register 0x20 offset 8,10 = Entering/Leaving brine temps (R5T, R6T) instead of air coil temps
+#   - Register 0x30 offset 1 = Brine pump feedback instead of fan speed
+#   - High/Low pressure sensors for refrigerant monitoring
+#   - Expansion valves for brine circuit (instead of fan speed control)
+#   - Refrigerant pressure sensor on 0x62
+#
+# ALL register entries from the ESPAltherma definition are included below.
+# Comment out any sensors you don't need.
+
+# anchors
+.altherma_base: &altherma_base
+  platform: altherma_hub
+  altherma_hub_id: altherma_hub_1
+
+.temp: &temp
+  <<: *altherma_base
+  device_class: temperature
+  unit_of_measurement: °C
+  state_class: measurement
+  accuracy_decimals: 1
+
+.temp_diag: &temp_diag
+  <<: *temp
+  entity_category: diagnostic
+
+.binary: &binary
+  <<: *altherma_base
+
+.binary_diag: &binary_diag
+  <<: *binary
+  entity_category: diagnostic
+
+.current: &current
+  <<: *altherma_base
+  device_class: current
+  unit_of_measurement: A
+  icon: mdi:current-ac
+  state_class: measurement
+  accuracy_decimals: 1
+
+.power: &power
+  <<: *altherma_base
+  device_class: power
+  unit_of_measurement: kW
+  state_class: measurement
+  accuracy_decimals: 2
+
+.pressure_bar: &pressure_bar
+  <<: *altherma_base
+  device_class: pressure
+  unit_of_measurement: bar
+  state_class: measurement
+  accuracy_decimals: 1
+
+.rps: &rps
+  <<: *altherma_base
+  unit_of_measurement: rps
+  state_class: measurement
+
+.text: &text
+  <<: *altherma_base
+
+.text_diag: &text_diag
+  <<: *text
+  entity_category: diagnostic
+
+# =============================================================================
+# SENSORS
+# =============================================================================
+sensor:
+
+  # ---------------------------------------------------------------------------
+  # Register 0x00 (Outdoor Unit Info / Capacity)
+  # ---------------------------------------------------------------------------
+  - <<: *altherma_base
+    name: O/U capacity (kW)
+    register: 0x00
+    offset: 12
+    convid: 105
+    datasize: 1
+    unit_of_measurement: kW
+    state_class: measurement
+    entity_category: diagnostic
+
+  # ---------------------------------------------------------------------------
+  # Register 0x00 (Outdoor Unit Identity)
+  # ---------------------------------------------------------------------------
+  - <<: *altherma_base
+    name: Refrigerant type
+    register: 0x00
+    offset: 0
+    convid: 802
+    datasize: 0
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: O/U MPU ID (xx)
+    register: 0x00
+    offset: 10
+    convid: 152
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: O/U MPU ID (yy)
+    register: 0x00
+    offset: 11
+    convid: 152
+    datasize: 1
+    entity_category: diagnostic
+
+  # ---------------------------------------------------------------------------
+  # Register 0x11 (Outdoor Unit EEPROM)
+  # ---------------------------------------------------------------------------
+  # Note: convid 215/214 print hex digit + character codes for software version
+  - <<: *altherma_base
+    name: O/U EEPROM (1st digit)
+    register: 0x11
+    offset: 0
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: O/U EEPROM (3rd 4th digit)
+    register: 0x11
+    offset: 1
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: O/U EEPROM (5th 6th digit)
+    register: 0x11
+    offset: 2
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: O/U EEPROM (7th 8th digit)
+    register: 0x11
+    offset: 3
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: O/U EEPROM (10th digit)
+    register: 0x11
+    offset: 4
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: O/U EEPROM (11th digit)
+    register: 0x11
+    offset: 5
+    convid: 214
+    datasize: 1
+    entity_category: diagnostic
+
+  # ---------------------------------------------------------------------------
+  # Register 0x10 (Outdoor Unit Status & Protections)
+  # ---------------------------------------------------------------------------
+  - <<: *temp_diag
+    name: Target Evap. Temp.
+    register: 0x10
+    offset: 6
+    convid: 114
+    datasize: 2
+  - <<: *temp_diag
+    name: Target Cond. Temp.
+    register: 0x10
+    offset: 8
+    convid: 114
+    datasize: 2
+  # Note: convid 310/311 encode bitfields - see converter code
+  - <<: *altherma_base
+    name: Discharge Temp. Protection Retry Qty
+    register: 0x10
+    offset: 10
+    convid: 310
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: Comp. INV Current Protection Retry Qty
+    register: 0x10
+    offset: 10
+    convid: 311
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: HP Protection Retry Qty
+    register: 0x10
+    offset: 11
+    convid: 310
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: LP Protection Retry Qty
+    register: 0x10
+    offset: 11
+    convid: 311
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: Fin Temp. Protection Retry Qty
+    register: 0x10
+    offset: 12
+    convid: 310
+    datasize: 1
+    entity_category: diagnostic
+
+  # ---------------------------------------------------------------------------
+  # Register 0x20 (Outdoor Unit Sensors - Brine Loop & Refrigerant)
+  # ---------------------------------------------------------------------------
+  - <<: *temp
+    name: Outdoor air temp. (R1T)
+    register: 0x20
+    offset: 0
+    convid: 105
+    datasize: 2
+  - <<: *temp_diag
+    name: 2 phase thermistor (R4T)
+    register: 0x20
+    offset: 2
+    convid: 105
+    datasize: 2
+  - <<: *temp_diag
+    name: Discharge pipe temp.
+    register: 0x20
+    offset: 4
+    convid: 105
+    datasize: 2
+  - <<: *temp_diag
+    name: Suction pipe temp. (R3T)
+    register: 0x20
+    offset: 6
+    convid: 105
+    datasize: 2
+  - <<: *temp
+    name: Entering brine temp. (R5T)
+    register: 0x20
+    offset: 8
+    convid: 105
+    datasize: 2
+  - <<: *temp
+    name: Leaving brine temp. (R6T)
+    register: 0x20
+    offset: 10
+    convid: 105
+    datasize: 2
+  - <<: *altherma_base
+    name: High Pressure
+    register: 0x20
+    offset: 12
+    convid: 105
+    datasize: 2
+    unit_of_measurement: kPa
+    state_class: measurement
+    accuracy_decimals: 2
+    entity_category: diagnostic
+  - <<: *temp_diag
+    name: High Pressure sat. temp.
+    register: 0x20
+    offset: 12
+    convid: 405
+    datasize: 2
+  - <<: *altherma_base
+    name: Low Pressure
+    register: 0x20
+    offset: 14
+    convid: 105
+    datasize: 2
+    unit_of_measurement: kPa
+    state_class: measurement
+    accuracy_decimals: 2
+    entity_category: diagnostic
+  - <<: *temp_diag
+    name: Low Pressure sat. temp.
+    register: 0x20
+    offset: 14
+    convid: 405
+    datasize: 2
+
+  # ---------------------------------------------------------------------------
+  # Register 0x21 (Outdoor Unit Electrical & Fin Temps)
+  # ---------------------------------------------------------------------------
+  - <<: *current
+    name: INV primary current (A)
+    register: 0x21
+    offset: 0
+    convid: 105
+    datasize: 2
+  - <<: *current
+    name: INV secondary current (A)
+    register: 0x21
+    offset: 2
+    convid: 105
+    datasize: 2
+  - <<: *temp_diag
+    name: INV fin temp.
+    register: 0x21
+    offset: 4
+    convid: 105
+    datasize: 2
+  - <<: *temp_diag
+    name: Fan 1 fin temp.
+    register: 0x21
+    offset: 6
+    convid: 152
+    datasize: 2
+  - <<: *temp_diag
+    name: Fan 2 fin temp.
+    register: 0x21
+    offset: 8
+    convid: 152
+    datasize: 2
+  - <<: *temp_diag
+    name: Compressor outlet temperature
+    register: 0x21
+    offset: 10
+    convid: 152
+    datasize: 2
+
+  # ---------------------------------------------------------------------------
+  # Register 0x30 (Outdoor Unit Actuators)
+  # ---------------------------------------------------------------------------
+  - <<: *rps
+    name: INV frequency (rps)
+    register: 0x30
+    offset: 0
+    convid: 152
+    datasize: 1
+  - <<: *altherma_base
+    name: Brine pump feedback
+    register: 0x30
+    offset: 1
+    convid: 211
+    datasize: 1
+    state_class: measurement
+  - <<: *altherma_base
+    name: Fan 2 (step)
+    register: 0x30
+    offset: 2
+    convid: 211
+    datasize: 1
+    state_class: measurement
+  - <<: *altherma_base
+    name: Expansion valve 1 (pls)
+    register: 0x30
+    offset: 3
+    convid: 151
+    datasize: 2
+    state_class: measurement
+    icon: mdi:valve
+  - <<: *altherma_base
+    name: Expansion valve 2 (pls)
+    register: 0x30
+    offset: 5
+    convid: 151
+    datasize: 2
+    state_class: measurement
+    icon: mdi:valve
+  - <<: *altherma_base
+    name: Expansion valve 3 (pls)
+    register: 0x30
+    offset: 7
+    convid: 151
+    datasize: 2
+    state_class: measurement
+    icon: mdi:valve
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: Expansion valve 4 (pls)
+    register: 0x30
+    offset: 9
+    convid: 151
+    datasize: 2
+    state_class: measurement
+    icon: mdi:valve
+    entity_category: diagnostic
+
+  # ---------------------------------------------------------------------------
+  # Register 0x60 (Indoor Unit - Setpoints)
+  # ---------------------------------------------------------------------------
+  - <<: *temp
+    name: DHW setpoint
+    register: 0x60
+    offset: 7
+    convid: 105
+    datasize: 2
+  - <<: *temp
+    name: LW setpoint (main)
+    register: 0x60
+    offset: 9
+    convid: 105
+    datasize: 2
+  # Indoor Unit info (text-based, setpoints section for organization)
+  - <<: *altherma_base
+    name: Indoor Option Code
+    register: 0x60
+    offset: 13
+    convid: 152
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: I/U Software ID (xx)
+    register: 0x60
+    offset: 15
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: I/U Software ID (yy)
+    register: 0x60
+    offset: 14
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: I/U EEPROM Ver.
+    register: 0x60
+    offset: 16
+    convid: 152
+    datasize: 1
+    entity_category: diagnostic
+
+  # ---------------------------------------------------------------------------
+  # Register 0x61 (Indoor Unit - Water Loop Sensors)
+  # ---------------------------------------------------------------------------
+  - <<: *temp
+    name: Leaving water temp. before BUH (R1T)
+    register: 0x61
+    offset: 2
+    convid: 105
+    datasize: 2
+  - <<: *temp
+    name: Leaving water temp. after BUH (R2T)
+    register: 0x61
+    offset: 4
+    convid: 105
+    datasize: 2
+  - <<: *temp_diag
+    name: Refrig. Temp. liquid side (R3T)
+    register: 0x61
+    offset: 6
+    convid: 105
+    datasize: 2
+  - <<: *temp
+    name: Inlet water temp. (R4T)
+    register: 0x61
+    offset: 8
+    convid: 105
+    datasize: 2
+  - <<: *temp
+    name: DHW tank temp. (R5T)
+    register: 0x61
+    offset: 10
+    convid: 105
+    datasize: 2
+  - <<: *temp
+    name: Indoor ambient temp. (R1T)
+    register: 0x61
+    offset: 12
+    convid: 105
+    datasize: 2
+  - <<: *temp_diag
+    name: Ext. indoor ambient sensor (R6T)
+    register: 0x61
+    offset: 13
+    convid: 105
+    datasize: 2
+
+  # ---------------------------------------------------------------------------
+  # Register 0x62 (Indoor Unit Extended)
+  # ---------------------------------------------------------------------------
+  - <<: *temp
+    name: LW setpoint (add)
+    register: 0x62
+    offset: 3
+    convid: 105
+    datasize: 2
+  - <<: *temp
+    name: RT setpoint
+    register: 0x62
+    offset: 5
+    convid: 105
+    datasize: 2
+  - <<: *altherma_base
+    name: Flow sensor (l/min)
+    register: 0x62
+    offset: 9
+    convid: 105
+    datasize: 2
+    unit_of_measurement: l/min
+    state_class: measurement
+    accuracy_decimals: 1
+  - <<: *pressure_bar
+    name: Water pressure
+    register: 0x62
+    offset: 11
+    convid: 105
+    datasize: 1
+  - <<: *altherma_base
+    name: Water pump signal (0:max-100:stop)
+    register: 0x62
+    offset: 12
+    convid: 152
+    datasize: 1
+    accuracy_decimals: 0
+  - <<: *altherma_base
+    name: 3 way valve mixing 1
+    register: 0x62
+    offset: 13
+    convid: 152
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: 3 way valve mixing 2
+    register: 0x62
+    offset: 14
+    convid: 152
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: Refrigerant pressure sensor
+    register: 0x62
+    offset: 15
+    convid: 105
+    datasize: 2
+    unit_of_measurement: kPa
+    state_class: measurement
+    accuracy_decimals: 2
+    entity_category: diagnostic
+
+  # ---------------------------------------------------------------------------
+  # Register 0x63 (Indoor Unit - EEPROM, Electrical & Info)
+  # ---------------------------------------------------------------------------
+  - <<: *altherma_base
+    name: I/U EEPROM (3rd digit)
+    register: 0x63
+    offset: 2
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: I/U EEPROM (4th 5th digit)
+    register: 0x63
+    offset: 3
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: I/U EEPROM (6th 7th digit)
+    register: 0x63
+    offset: 4
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: I/U EEPROM (8th 9th digit)
+    register: 0x63
+    offset: 5
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: I/U EEPROM (11th digit)
+    register: 0x63
+    offset: 6
+    convid: 215
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: I/U EEPROM (12th digit)(rev.)
+    register: 0x63
+    offset: 7
+    convid: 214
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: BUH output capacity
+    register: 0x63
+    offset: 13
+    convid: 152
+    datasize: 1
+    entity_category: diagnostic
+  - <<: *current
+    name: CT current L1
+    register: 0x63
+    offset: 14
+    convid: 161
+    datasize: 1
+  - <<: *current
+    name: CT current L2
+    register: 0x63
+    offset: 15
+    convid: 161
+    datasize: 1
+  - <<: *current
+    name: CT current L3
+    register: 0x63
+    offset: 16
+    convid: 161
+    datasize: 1
+
+  # ---------------------------------------------------------------------------
+  # Register 0x64 (Additional Indoor Sensors)
+  # ---------------------------------------------------------------------------
+  - <<: *temp_diag
+    name: 2nd Domestic hot water temperature
+    register: 0x64
+    offset: 12
+    convid: 105
+    datasize: 2
+  - <<: *altherma_base
+    name: Target delta T heating
+    register: 0x64
+    offset: 14
+    convid: 152
+    datasize: 1
+    unit_of_measurement: K
+    state_class: measurement
+    entity_category: diagnostic
+  - <<: *altherma_base
+    name: Target delta T cooling
+    register: 0x64
+    offset: 15
+    convid: 152
+    datasize: 1
+    unit_of_measurement: K
+    state_class: measurement
+    entity_category: diagnostic
+
+# =============================================================================
+# BINARY SENSORS
+# =============================================================================
+binary_sensor:
+
+  # ---------------------------------------------------------------------------
+  # Register 0x10 (Outdoor Unit Status)
+  # ---------------------------------------------------------------------------
+  - <<: *binary_diag
+    name: Thermostat ON/OFF (O/U)
+    register: 0x10
+    offset: 1
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: Restart standby
+    register: 0x10
+    offset: 1
+    convid: 306
+    datasize: 1
+  - <<: *binary_diag
+    name: Startup Control
+    register: 0x10
+    offset: 1
+    convid: 305
+    datasize: 1
+  - <<: *binary
+    name: Defrost Operation
+    register: 0x10
+    offset: 1
+    convid: 304
+    datasize: 1
+  - <<: *binary_diag
+    name: Oil Return Operation
+    register: 0x10
+    offset: 1
+    convid: 303
+    datasize: 1
+  - <<: *binary_diag
+    name: Pressure equalizing operation
+    register: 0x10
+    offset: 1
+    convid: 302
+    datasize: 1
+  - <<: *binary_diag
+    name: Demand Signal
+    register: 0x10
+    offset: 1
+    convid: 301
+    datasize: 1
+  - <<: *binary_diag
+    name: Low noise control
+    register: 0x10
+    offset: 1
+    convid: 300
+    datasize: 1
+  # Protection drop controls (same byte offset 10-12, different bit positions)
+  - <<: *binary_diag
+    name: Discharge Temp. Drop
+    register: 0x10
+    offset: 10
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: Comp. INV Current Drop
+    register: 0x10
+    offset: 10
+    convid: 303
+    datasize: 1
+  - <<: *binary_diag
+    name: HP Drop Control
+    register: 0x10
+    offset: 11
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: LP Drop Control
+    register: 0x10
+    offset: 11
+    convid: 303
+    datasize: 1
+  - <<: *binary_diag
+    name: Fin Temp. Drop Control
+    register: 0x10
+    offset: 12
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: Other Drop Control
+    register: 0x10
+    offset: 12
+    convid: 303
+    datasize: 1
+
+  # ---------------------------------------------------------------------------
+  # Register 0x30 (Outdoor Unit Actuator Status - same byte 0x30 offset 0)
+  # ---------------------------------------------------------------------------
+  # Note: These share the same byte as INV frequency (rps).
+  # The convid determines which bit is checked.
+  - <<: *binary_diag
+    name: Solenoid Valve 5
+    register: 0x30
+    offset: 0
+    convid: 303
+    datasize: 1
+  - <<: *binary_diag
+    name: Solenoid Valve 4
+    register: 0x30
+    offset: 0
+    convid: 304
+    datasize: 1
+  - <<: *binary_diag
+    name: 4 Way Valve
+    register: 0x30
+    offset: 11
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: Crank case heater
+    register: 0x30
+    offset: 12
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: 4 way valve (Y1S)
+    register: 0x30
+    offset: 13
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: Y2S
+    register: 0x30
+    offset: 13
+    convid: 306
+    datasize: 1
+  - <<: *binary_diag
+    name: Y3S
+    register: 0x30
+    offset: 13
+    convid: 305
+    datasize: 1
+
+  # ---------------------------------------------------------------------------
+  # Register 0x60 (Indoor Unit Control Status)
+  # ---------------------------------------------------------------------------
+  - <<: *binary
+    name: Thermostat ON/OFF
+    device_class: running
+    register: 0x60
+    offset: 2
+    convid: 303
+    datasize: 1
+  - <<: *binary
+    name: Freeze Protection
+    device_class: cold
+    register: 0x60
+    offset: 2
+    convid: 302
+    datasize: 1
+  - <<: *binary
+    name: Silent Mode
+    device_class: sound
+    register: 0x60
+    offset: 2
+    convid: 301
+    datasize: 1
+  - <<: *binary_diag
+    name: Freeze Protection for water piping
+    register: 0x60
+    offset: 2
+    convid: 300
+    datasize: 1
+  - <<: *binary_diag
+    name: Water flow switch
+    register: 0x60
+    offset: 11
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: Thermal protector (Q1L) BUH
+    register: 0x60
+    offset: 11
+    convid: 306
+    datasize: 1
+  - <<: *binary_diag
+    name: Thermal protector BSH
+    register: 0x60
+    offset: 11
+    convid: 305
+    datasize: 1
+  - <<: *binary_diag
+    name: Benefit kWh rate power supply
+    register: 0x60
+    offset: 11
+    convid: 304
+    datasize: 1
+  - <<: *binary_diag
+    name: Solar input
+    register: 0x60
+    offset: 11
+    convid: 303
+    datasize: 1
+  - <<: *binary_diag
+    name: Bivalent Operation
+    register: 0x60
+    offset: 11
+    convid: 300
+    datasize: 1
+  - <<: *binary_diag
+    name: 2-way valve (On:Heat / Off:Cool)
+    register: 0x60
+    offset: 12
+    convid: 307
+    datasize: 1
+  - <<: *binary
+    name: 3-way valve (On:DHW / Off:Space)
+    register: 0x60
+    offset: 12
+    convid: 306
+    datasize: 1
+  - <<: *binary
+    name: BSH (Booster Heater)
+    register: 0x60
+    offset: 12
+    convid: 305
+    datasize: 1
+  - <<: *binary
+    name: BUH Step1
+    register: 0x60
+    offset: 12
+    convid: 304
+    datasize: 1
+  - <<: *binary
+    name: BUH Step2
+    register: 0x60
+    offset: 12
+    convid: 303
+    datasize: 1
+  - <<: *binary_diag
+    name: Floor loop shut off valve
+    register: 0x60
+    offset: 12
+    convid: 302
+    datasize: 1
+  - <<: *binary_diag
+    name: Water pump operation
+    register: 0x60
+    offset: 12
+    convid: 301
+    datasize: 1
+  - <<: *binary_diag
+    name: Solar pump operation
+    register: 0x60
+    offset: 12
+    convid: 300
+    datasize: 1
+
+  # ---------------------------------------------------------------------------
+  # Register 0x62 (Indoor Unit Extended Control)
+  # ---------------------------------------------------------------------------
+  - <<: *binary_diag
+    name: Reheat ON/OFF
+    register: 0x62
+    offset: 2
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: Storage ECO ON/OFF
+    register: 0x62
+    offset: 2
+    convid: 306
+    datasize: 1
+  - <<: *binary_diag
+    name: Storage comfort ON/OFF
+    register: 0x62
+    offset: 2
+    convid: 305
+    datasize: 1
+  - <<: *binary
+    name: Powerful DHW Operation
+    register: 0x62
+    offset: 2
+    convid: 304
+    datasize: 1
+  - <<: *binary_diag
+    name: Space heating Operation ON/OFF
+    register: 0x62
+    offset: 2
+    convid: 303
+    datasize: 1
+  - <<: *binary_diag
+    name: System OFF (ON = System off)
+    register: 0x62
+    offset: 2
+    convid: 302
+    datasize: 1
+  - <<: *binary_diag
+    name: Emergency (indoor) active
+    register: 0x62
+    offset: 2
+    convid: 300
+    datasize: 1
+  # Register 0x62 offset 7 (external RT inputs)
+  - <<: *binary_diag
+    name: Add. Ext. RT Input Cool.
+    register: 0x62
+    offset: 7
+    convid: 307
+    datasize: 1
+  - <<: *binary_diag
+    name: Add. Ext. RT Input Heat.
+    register: 0x62
+    offset: 7
+    convid: 306
+    datasize: 1
+  - <<: *binary_diag
+    name: Main RT Cooling
+    register: 0x62
+    offset: 7
+    convid: 305
+    datasize: 1
+  - <<: *binary_diag
+    name: Main RT Heating
+    register: 0x62
+    offset: 7
+    convid: 304
+    datasize: 1
+  - <<: *binary_diag
+    name: Pwr consumption limit 4
+    register: 0x62
+    offset: 7
+    convid: 303
+    datasize: 1
+  - <<: *binary_diag
+    name: Pwr consumption limit 3
+    register: 0x62
+    offset: 7
+    convid: 302
+    datasize: 1
+  - <<: *binary_diag
+    name: Pwr consumption limit 2
+    register: 0x62
+    offset: 7
+    convid: 301
+    datasize: 1
+  - <<: *binary_diag
+    name: Pwr consumption limit 1
+    register: 0x62
+    offset: 7
+    convid: 300
+    datasize: 1
+  # Register 0x62 offset 8 (output status)
+  - <<: *binary_diag
+    name: PHE Heater
+    register: 0x62
+    offset: 8
+    convid: 304
+    datasize: 1
+  - <<: *binary_diag
+    name: Tank preheat ON/OFF
+    register: 0x62
+    offset: 8
+    convid: 303
+    datasize: 1
+  - <<: *binary_diag
+    name: Circulation pump operation
+    register: 0x62
+    offset: 8
+    convid: 302
+    datasize: 1
+  - <<: *binary_diag
+    name: Alarm output
+    register: 0x62
+    offset: 8
+    convid: 301
+    datasize: 1
+  - <<: *binary_diag
+    name: Space H Operation output
+    register: 0x62
+    offset: 8
+    convid: 300
+    datasize: 1
+
+  # ---------------------------------------------------------------------------
+  # Register 0x63 (Indoor Unit Status)
+  # ---------------------------------------------------------------------------
+  - <<: *binary_diag
+    name: HP forced OFF by installer
+    register: 0x63
+    offset: 16
+    convid: 307
+    datasize: 1
+
+# =============================================================================
+# TEXT SENSORS (Operation Modes, Errors, Software Info)
+# =============================================================================
+text_sensor:
+
+  # ---------------------------------------------------------------------------
+  # Register 0x10 (Outdoor Operation Mode & Errors)
+  # ---------------------------------------------------------------------------
+  - <<: *text
+    name: Outdoor Operation Mode
+    icon: mdi:heat-pump
+    register: 0x10
+    offset: 0
+    convid: 217
+    datasize: 1
+  - <<: *text_diag
+    name: Error type (O/U)
+    register: 0x10
+    offset: 4
+    convid: 203
+    datasize: 1
+  - <<: *text_diag
+    name: Error Code (O/U)
+    register: 0x10
+    offset: 5
+    convid: 204
+    datasize: 1
+
+  # ---------------------------------------------------------------------------
+  # Register 0x60 (Indoor Operation Mode & Errors)
+  # ---------------------------------------------------------------------------
+  - <<: *text
+    name: I/U operation mode
+    icon: mdi:state-machine
+    register: 0x60
+    offset: 2
+    convid: 315
+    datasize: 1
+  - <<: *text_diag
+    name: Error Code
+    register: 0x60
+    offset: 3
+    convid: 204
+    datasize: 1
+  - <<: *text_diag
+    name: Error detailed code
+    register: 0x60
+    offset: 4
+    convid: 152
+    datasize: 1
+  - <<: *text_diag
+    name: Error type
+    register: 0x60
+    offset: 5
+    convid: 203
+    datasize: 1
+  - <<: *text_diag
+    name: Indoor Unit Capacity
+    register: 0x60
+    offset: 6
+    convid: 219
+    datasize: 1
